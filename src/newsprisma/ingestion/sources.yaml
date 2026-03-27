@@ -1,0 +1,56 @@
+# News sources grouped by publication language.
+# Each entry: name, rss, origin (country of publication), editorial (brief stance note)
+
+sources:
+  english:
+    # UK public broadcaster — global coverage, centrist
+    - name: BBC News
+      rss: http://feeds.bbci.co.uk/news/rss.xml
+      origin: UK
+
+    # Doha-based international broadcaster — strong Global South perspective
+    - name: Al Jazeera
+      rss: https://www.aljazeera.com/xml/rss/all.xml
+      origin: Qatar
+
+    # UK centre-left broadsheet — long investigative tradition
+    - name: The Guardian
+      rss: https://www.theguardian.com/world/rss
+      origin: UK
+
+    # Russian state news agency — official government positions
+    - name: TASS
+      rss: https://tass.com/rss/v2.xml
+      origin: Russia (state)
+
+  spanish:
+    # Spain's newspaper of record — centrist, Madrid-based
+    - name: El País
+      rss: https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/portada
+      origin: Spain
+
+    # Centre-right Spanish daily
+    - name: El Mundo
+      rss: https://e00-elmundo.uecdn.es/elmundo/rss/portada.xml
+      origin: Spain
+
+    # BBC's Spanish-language international service — Latin America focus
+    - name: BBC Mundo
+      rss: http://www.bbc.co.uk/mundo/index.xml
+      origin: UK/LatAm
+
+  russian:
+    # Latvia-based independent outlet — critical of Kremlin
+    - name: Meduza
+      rss: https://meduza.io/rss/all
+      origin: Latvia (exile)
+
+    # Independent Russian news agency — business/political focus
+    - name: Interfax
+      rss: https://www.interfax.ru/rss.asp
+      origin: Russia (independent)
+
+    # Major Russian news aggregator — broad domestic coverage
+    - name: Lenta.ru
+      rss: https://lenta.ru/rss/news
+      origin: Russia
