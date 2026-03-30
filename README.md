@@ -4,8 +4,33 @@
 
 A multilingual agentic RAG system that indexes news from EN/ES/RU sources and answers questions like: *"How is topic X covered differently across these three media ecosystems?"*
 
+<!-- vscode-markdown-toc -->
+* [Overview](#Overview)
+* [Setup](#Setup)
+	* [Prerequisites](#Prerequisites)
+	* [Clone and create a virtual environment](#Cloneandcreateavirtualenvironment)
+* [Ingestion](#Ingestion)
+* [Indexing](#Indexing)
+* [Tech stack](#Techstack)
 
-Fetches articles from 10 RSS feeds across three languages, extracts clean article text, deduplicates, and saves to a JSONL snapshot.
+<!-- vscode-markdown-toc-config
+	numbering=false
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+
+## <a name='Overview'></a>Overview
+
+RSS feeds → clean article text → sentence-aware chunks → multilingual embeddings → semantic search across EN, ES, and RU in a single vector store.
+
+```mermaid
+flowchart LR
+    RSS["10 RSS feeds\nEN / ES / RU"] --> Ingest["ingest.py\nfeedparser + trafilatura"]
+    Ingest --> JSONL["articles.jsonl"]
+    JSONL --> Index["index.py\nBGE-M3 + chunker"]
+    Index --> Chroma["ChromaDB"]
+    Chroma --> Search["cross-lingual\nsemantic search"]
+```
 
 | Source | Language | Origin |
 |---|---|---|
@@ -22,14 +47,14 @@ Fetches articles from 10 RSS feeds across three languages, extracts clean articl
 
 ---
 
-## Setup
+## <a name='Setup'></a>Setup
 
-### Prerequisites
+### <a name='Prerequisites'></a>Prerequisites
 
 - Python 3.11+
 - [`uv`](https://docs.astral.sh/uv/) (recommended) or `pip`
 
-### Clone and create a virtual environment
+### <a name='Cloneandcreateavirtualenvironment'></a>Clone and create a virtual environment
 
 ```bash
 git clone https://github.com/msalunina/news-prisma.git
@@ -55,7 +80,7 @@ cp .env.example .env
 
 ---
 
-## Running the ingestion pipeline
+## <a name='Ingestion'></a>Ingestion
 
 ```bash
 python scripts/ingest.py
@@ -131,49 +156,64 @@ python scripts/ingest.py --output data/snapshots/my_snapshot.jsonl
 }
 ```
 
-<!-- ---
+---
 
-## Running the tests
+## <a name='Indexing'></a>Indexing
 
 ```bash
-pytest
+python scripts/index.py
 ```
 
-All tests mock network calls, no internet connection required.
+This will:
+1. Load the latest JSONL snapshot
+2. Split each article into sentence-aware chunks
+3. Embed them with [BGE-M3](https://huggingface.co/BAAI/bge-m3)
+4. Store everything in a local ChromaDB vector store
 
-**What the tests cover:**
 
-- `TestFetchFeed` — RSS parsing with a real feedparser against mock XML; verifies metadata extraction, graceful error handling, URL/title filtering, and language tagging
-- `TestFetchAllSources` — verifies all three language groups are iterated from `sources.yaml`
-- `TestParseArticle` — trafilatura wrapper; covers success path, network errors, empty downloads, short-text rejection, and fallback title logic
-- `TestDeduplicate` — URL dedup, normalised-title dedup within a language, cross-language title collision allowed, empty list, order preservation -->
+BGE-M3 is a single multilingual model trained on 100+ languages, which means no language-specific handling needed. A Russian query will retrieve semantically similar English and Spanish chunks out of the box.
 
-<!-- ---
-
-## Project structure
+**Example output:**
 
 ```
-news-prisma/
-├── src/newsprisma/
-│   ├── config.py                   # Pydantic Settings — loads .env
-│   └── ingestion/
-│       ├── sources.yaml            # RSS feed registry (10 sources, 3 languages)
-│       ├── rss_fetcher.py          # feedparser → list[ArticleMetadata]
-│       ├── article_parser.py       # trafilatura: URL → clean text
-│       └── deduplicator.py         # URL + normalised-title dedup
-├── scripts/
-│   └── ingest.py                   # CLI entry point
-├── tests/
-│   └── test_ingestion.py           # 16 unit tests (all mocked)
-├── data/
-│   └── snapshots/                  # Output JSONL files (git-ignored)
-├── pyproject.toml
-└── .env.example
-``` -->
+NewsPrisma — Indexing
+Snapshot : data/snapshots/articles_2026_03.jsonl
+ChromaDB : data/chroma_db
+Model    : BAAI/bge-m3
+
+Loaded 30 articles
+  en: 12 articles
+  es: 9 articles
+  ru: 9 articles
+
+Chunking & indexing… ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100%
+
+Done! Indexed 223 chunks from 30 articles.
+Collection totals: 223 chunks total
+  en: 91 chunks
+  es: 107 chunks
+  ru: 25 chunks
+```
+
+**Cross-lingual retrieval in action** (Python shell):
+
+```python
+from newsprisma.indexing.embedder import Embedder
+from newsprisma.indexing.store import VectorStore
+
+store = VectorStore("data/chroma_db")
+embedder = Embedder("BAAI/bge-m3")
+
+# Russian query — retrieves relevant EN and ES chunks
+results = store.query(embedder.encode_query("нефть экспорт Ближний Восток"), top_k=3)
+# [en] Al Jazeera  score=0.569  Saudi, UAE, Iraq: Can three pipelines help oil escape…
+# [es] El Mundo    score=0.548  El destino es el puerto de Fujairah, en el Golfo de Omán…
+# [en] Al Jazeera  score=0.534  However, oil exports from Fujairah do appear to have risen…
+```
 
 ---
 
-## Tech stack
+## <a name='Techstack'></a>Tech stack
 
 | Component | Choice |
 |---|---|
@@ -181,5 +221,7 @@ news-prisma/
 | Package manager | `uv` |
 | RSS parsing | `feedparser` |
 | Article extraction | `trafilatura` |
+| Embeddings | `BAAI/bge-m3` via `sentence-transformers` |
+| Vector store | `chromadb` |
 | Config | `pydantic-settings` |
-<!-- | Testing | `pytest` + `pytest-mock` | -->
+| Testing | `pytest` + `pytest-mock` |

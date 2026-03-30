@@ -15,15 +15,16 @@ class Settings(BaseSettings):
     # groq_api_key: str = Field(default="", alias="GROQ_API_KEY")
     # ollama_base_url: str = Field(default="http://localhost:11434", alias="OLLAMA_BASE_URL")
 
-    # # Embeddings
-    # embedding_model: str = Field(default="BAAI/bge-m3", alias="EMBEDDING_MODEL")
+    # Embeddings
+    embedding_model: str = Field(default="BAAI/bge-m3", alias="EMBEDDING_MODEL")
+    embedding_batch_size: int = Field(default=32, alias="EMBEDDING_BATCH_SIZE")
 
     # # WandB
     # wandb_api_key: str = Field(default="", alias="WANDB_API_KEY")
     # wandb_project: str = Field(default="newsprisma", alias="WANDB_PROJECT")
 
-    # # ChromaDB
-    # chroma_persist_dir: Path = Field(default=Path("./data/chroma_db"), alias="CHROMA_PERSIST_DIR")
+    # ChromaDB
+    chroma_persist_dir: Path = Field(default=Path("./data/chroma_db"), alias="CHROMA_PERSIST_DIR")
 
     # Ingestion
     max_articles_per_source: int = Field(default=50, alias="MAX_ARTICLES_PER_SOURCE")
