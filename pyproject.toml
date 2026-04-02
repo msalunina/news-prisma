@@ -5,6 +5,9 @@ description = "Multilingual news RAG agent surfacing how the same story looks th
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    # llm
+    "groq>=0.11.0",
+    "langdetect>=1.0.9",
     # indexing
     "sentence-transformers>=2.7.0,<3.0.0",
     "transformers>=4.44.0,<4.50.0",
@@ -49,3 +52,6 @@ ignore_missing_imports = true
 testpaths = ["tests"]
 asyncio_mode = "auto"
 markers = ["slow: marks tests as slow (require model downloads, deselect with -m 'not slow')"]
+filterwarnings = [
+    "ignore::FutureWarning:transformers",
+]

@@ -11,9 +11,9 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    # # LLM
-    # groq_api_key: str = Field(default="", alias="GROQ_API_KEY")
-    # ollama_base_url: str = Field(default="http://localhost:11434", alias="OLLAMA_BASE_URL")
+    # LLM
+    groq_api_key: str = Field(default="", alias="GROQ_API_KEY")
+    groq_model: str = Field(default="llama-3.3-70b-versatile", alias="GROQ_MODEL")
 
     # Embeddings
     embedding_model: str = Field(default="BAAI/bge-m3", alias="EMBEDDING_MODEL")
