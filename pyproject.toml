@@ -5,9 +5,10 @@ description = "Multilingual news RAG agent surfacing how the same story looks th
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    # llm
+    # llm / agent
     "groq>=0.11.0",
     "langdetect>=1.0.9",
+    "langgraph>=0.2.0",
     # indexing
     "sentence-transformers>=2.7.0,<3.0.0",
     "transformers>=4.44.0,<4.50.0",

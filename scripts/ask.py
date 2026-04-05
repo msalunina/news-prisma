@@ -1,11 +1,11 @@
 #!/usr/bin/env python
-"""CLI for the NewsPrisma RAG pipeline.
+"""CLI for the NewsPrisma agent.
 
 Usage:
     python scripts/ask.py "What is happening with AI regulation?"
-    python scripts/ask.py "¿Qué pasa con la regulación de la IA?" --lang es
-    python scripts/ask.py "Что происходит с ИИ?" --top-k 12
-    python scripts/ask.py "AI news" --filter-lang en
+    python scripts/ask.py "¿Qué pasa con la regulación de la IA?"
+    python scripts/ask.py "How is climate change covered differently in English vs Spanish news?"
+    python scripts/ask.py "Что происходит с ИИ?"
 """
 
 from __future__ import annotations
@@ -27,14 +27,6 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 def main() -> None:
     parser = argparse.ArgumentParser(description="Ask NewsPrisma a question in any language.")
     parser.add_argument("query", help="Question to ask (any language)")
-    parser.add_argument(
-        "--top-k", type=int, default=8,
-        help="Number of context chunks to retrieve (default: 8)",
-    )
-    parser.add_argument(
-        "--filter-lang", choices=["en", "es", "ru"], default=None,
-        help="Restrict retrieval to a single language (default: all languages)",
-    )
     parser.add_argument("--verbose", action="store_true", help="Show debug logs")
     args = parser.parse_args()
 
@@ -50,39 +42,46 @@ def main() -> None:
 
     console = Console()
 
-    from newsprisma.agent.rag import retrieve_and_answer
+    from newsprisma.agent.graph import run_agent
 
     console.print(f"\n[bold cyan]NewsPrisma[/bold cyan] — asking: [italic]{args.query}[/italic]\n")
 
-    with console.status("[bold green]Retrieving and generating answer…"):
-        result = retrieve_and_answer(
-            query=args.query,
-            top_k=args.top_k,
-            language_filter=args.filter_lang,
-        )
+    with console.status("[bold green]Running agent…"):
+        result = run_agent(args.query)
+
+    lang_label = {"en": "English", "es": "Spanish", "ru": "Russian"}.get(
+        result["query_language"], result["query_language"]
+    )
+    mode_label = "Cross-lingual comparison" if result["mode"] == "compare" else "Single-language"
 
     # --- Answer panel ---
-    lang_label = {"en": "English", "es": "Spanish", "ru": "Russian"}.get(
-        result.query_language, result.query_language
-    )
     console.print(Panel(
-        Text(result.answer),
-        title=f"[bold green]Answer[/bold green]  (query language: {lang_label})",
+        Text(result["answer"]),
+        title=f"[bold green]Answer[/bold green]  "
+              f"(language: {lang_label} · mode: {mode_label})",
         border_style="green",
     ))
 
+    # --- Divergence warning (compare mode) ---
+    diff = result.get("perspective_diff", {})
+    if diff.get("divergence_detected"):
+        console.print(
+            f"[bold yellow]⚠ Divergence detected:[/bold yellow] "
+            f"{diff.get('divergence_note', '')}"
+        )
+
     # --- Sources table ---
-    if result.sources:
+    sources = result.get("sources", [])
+    if sources:
         table = Table(title="Sources", show_lines=True)
         table.add_column("Lang", style="bold", width=5)
         table.add_column("Source", style="cyan")
         table.add_column("Title")
         table.add_column("Published", width=12)
 
-        lang_icons = {"en": "EN", "es": "ES", "ru": "RU"}
-        for src in result.sources:
+        for src in sources:
             table.add_row(
-                lang_icons.get(src["language"], src["language"]),
+                src["language"].upper(),
                 src["source_name"],
                 src["title"][:80] + ("…" if len(src["title"]) > 80 else ""),
                 src["published_at"][:10] if src["published_at"] else "—",
